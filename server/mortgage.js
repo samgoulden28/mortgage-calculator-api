@@ -1,4 +1,4 @@
-var interestRate = 10
+var interestRate = 2.5
 
 /*
 GET /payment-amount
@@ -12,8 +12,26 @@ Return:
 Payment amount per scheduled payment in JSON format
 */
 
-module.exports.getPayment = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
-    return `getPayment, ${askingPrice}, ${downPayment}, ${paymentSchedule}, ${amortizationPeriod})`
+module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
+    // Build the response structure
+    let response = {status: 200, returnReason: '', paymentAmount: ''}
+    
+    // Validate the payment schedule format.
+    if(paymentSchedule !== 'weekly' &&
+       paymentSchedule !== 'bi-weekly' &&
+       paymentSchedule !== 'monthly'
+    ) {
+        response.status = 500
+        response.returnReason = `Please choose one of weekly, bi-weekly or monthly for paymentSchedule. Got ${paymentSchedule}`
+    }
+
+    if(downPayment >= askingPrice) {
+        response.status = 500
+        response.returnReason = `downPayment (${downPayment} is greater or equal than askingPrice (${askingPrice}))`
+    }
+
+    response.paymentAmount = 20
+    return response
 }
 
 /* 

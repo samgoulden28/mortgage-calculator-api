@@ -21,20 +21,33 @@ router.get('/', function(req, res) {
 
 // Get payment amount
 router.get('/payment-amount', function(req, res) {
+    // Validate query params
     if (!req.query.askingPrice || 
         !req.query.downPayment || 
         !req.query.paymentSchedule || 
         !req.query.amortizationPeriod) {
         res.status(500).json({
-            Error: `Include askingPrice, downPayment, paymentSchedule and amortizationPeriod in queryParams.`,
+            statusCode: 500,
+            errorMessage: `Include askingPrice, downPayment, paymentSchedule and amortizationPeriod in queryParams.`,
             receivedParams: Object.keys(req.query)
         })
-    }   
-    res.json({ message: mortage.getPayment(
+    }
+
+    // Get the payment amount from mortgage class
+    let paymentAmountResponse = mortage.getPaymentAmount(
         req.query.askingPrice,
         req.query.downPayment, 
         req.query.paymentSchedule,
-        req.query.amortizationPeriod) });   
+        req.query.amortizationPeriod) 
+
+    // Return an error if one was found
+    if(paymentAmountResponse.status !== 200 || !paymentAmountResponse.paymentAmount) {
+        res.status(paymentAmountResponse.status).json({
+            statusCode: paymentAmountResponse.status,
+            errorMessage: paymentAmountResponse.returnReason
+        })
+    }
+    res.json({ paymentAmount: paymentAmountResponse.paymentAmount});
 });
 
 /* 
@@ -49,8 +62,16 @@ Maximum Mortgage that can be taken out in JSON form
 */
 
 router.get('/mortgage-amount', function(req, res) {
-    mortgage.getMortgageAmount(1, 2, 3)
-    res.json({ message: 'Hit mortgage-amount' });   
+    if (!req.query.paymentAmount || 
+        !req.query.paymentSchedule || 
+        !req.query.amortizationPeriod) {
+        res.status(500).json({
+            Error: `Include paymentAmount, paymentSchedule and amortizationPeriod in query parameters.`,
+            receivedParams: Object.keys(req.query)
+        })
+    }
+    mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod)
+    res.json({ message: mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod) });   
 });
 
 /* 
