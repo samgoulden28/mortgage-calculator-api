@@ -47,7 +47,7 @@ router.get('/payment-amount', function(req, res) {
             errorMessage: paymentAmountResponse.returnReason
         })
     }
-    res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaying: paymentAmountResponse.timesPaying, totalPaid: paymentAmountResponse.totalPaid});
+    res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaid: paymentAmountResponse.timesPaid, totalPaid: paymentAmountResponse.totalPaid})
 });
 
 /* 
@@ -83,13 +83,15 @@ Return:
 message indicating the old and new interest rate in JSON format
 */
 router.patch('/interest-rate', function(req, res) {
-    mortage.updateInterestRate(20)
-    res.json({ message: 'Hit interest-rate' });   
+    if(req.body.rate)
+        mortage.updateInterestRate(req.body.rate / 100)
+    else 
+        res.status(500).json({message: `Ensure to include 'rate' in the request body`})
+    res.json({ interestRate: `Updated to ${req.body.rate}%` });   
 });
 
 router.get('/interest-rate', function(req, res) {
-    mortage.getInterestRate()
-    res.json({ message: 'Hit interest-rate' });   
+    res.json({ interestRate: mortage.getInterestRate() });   
 });
 
 // all of our routes will be prefixed with /api

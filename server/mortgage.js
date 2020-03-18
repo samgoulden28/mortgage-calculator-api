@@ -12,11 +12,26 @@ Return:
 Payment amount per scheduled payment in JSON format
 */
 
+/* 
+Down payment Insurance Cost
+5-9.99%
+3.15%
+
+10-14.99%
+2.4%
+
+15%-19.99%
+1.8%
+
+20%+
+N/A
+*/
+
 module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
     // Build the response structure
-    let response = {status: 200, returnReason: '', paymentAmount: '', timesPaying: ''}
+    let response = {status: 200, returnReason: '', paymentAmount: '', timesPaid: ''}
     let fAskingPrice, fDownPayment, fAmortizationPeriod
-    let multiplier = 12 // multiplier will change depending on paymentSchedule | 12 for monthly, | 26 for bi-weekly | 52 for weekly
+    let timesPaidPerYear = 12 // timesPaidPerYear will change depending on paymentSchedule | 12 for monthly, | 26 for bi-weekly | 52 for weekly
 
     try {
         fAskingPrice = Number.parseFloat(askingPrice)
@@ -25,23 +40,15 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     } catch (e) {
         response.status = 500
         response.returnReason = `Float conversion error!`
+        return response
     }
-    
-    // Validate the payment schedule format.
-    switch (paymentSchedule) {
-        case 'weekly':
-            multiplier = 52
-            break
-        case 'bi-weekly':
-            multiplier = 26
-            break
-        case 'monthly':
-            multiplier = 12
-            break
-        default:
-            response.status = 500
-            response.returnReason = `Please choose one of weekly, bi-weekly or monthly for paymentSchedule. Got ${paymentSchedule}`
-            return response
+
+    timesPaidPerYear = calculateTimesPaidPerYear(paymentSchedule)
+
+    if(timesPaidPerYear === -1) {
+        response.status = 500
+        response.returnReason = `Please choose one of weekly, bi-weekly or monthly for paymentSchedule. Got ${paymentSchedule}`
+        return response
     }
 
     // Validate amortization period
@@ -56,17 +63,35 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
         response.returnReason = `downPayment must be greater than the asking price, downPayment must be greater than 5% for loans of less than 500000, downPayment must be greater than 15% for loans of more than 500000`
     }
 
+    //TODO: Add insurance!
     principal = fAskingPrice - downPayment
-    // Determine times paying based on multiplier and years.
-    timesPaying = amortizationPeriod * multiplier
-    monthlyInterest = interestRate / 12
 
-    paymentAmount = calculateMonthlyPayment(principal, monthlyInterest, timesPaying)
+    // Determine times paying based on timesPaidPerYear and years.
+    timesPaid = amortizationPeriod * timesPaidPerYear
+
+    // Determinei interest per payment (interest Rate / timesPaidPerYear)
+    monthlyInterest = interestRate / timesPaidPerYear
+
+    paymentAmount = calculateMonthlyPayment(principal, monthlyInterest, timesPaid)
 
     response.paymentAmount = paymentAmount
-    response.timesPaying = timesPaying
-    response.totalPaid = timesPaying * paymentAmount
+    response.timesPaid = timesPaid
+    response.totalPaid = timesPaid * paymentAmount
     return response
+}
+
+const calculateTimesPaidPerYear = (paymentSchedule) => {
+    // Validate the payment schedule format.
+    switch (paymentSchedule) {
+        case 'weekly':
+            return 52
+        case 'bi-weekly':
+            return 26
+        case 'monthly':
+            return 12
+        default:
+            return -1
+    }
 }
 
 const validateDownPayment = (downPayment, askingPrice) => {
@@ -131,6 +156,7 @@ module.exports.updateInterestRate = (newRate) => {
     console.log("updateInterestRate", interestRate)
 }
 
-module.exports.getInterestRate = (newRate) => {
+module.exports.getInterestRate = () => {
     console.log("getInterestRate", interestRate)
+    return interestRate
 }
