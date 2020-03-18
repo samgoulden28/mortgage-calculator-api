@@ -1,7 +1,7 @@
 var express    = require('express');
 var app        = express();
 var bodyParser = require('body-parser');
-const mortage = require ('./mortgage')
+const mortgage = require ('./mortgage')
 
 // configure app to use bodyParser()
 // this will let us get the data from a POST
@@ -34,7 +34,7 @@ router.get('/payment-amount', function(req, res) {
     }
 
     // Get the payment amount from mortgage class
-    let paymentAmountResponse = mortage.getPaymentAmount(
+    let paymentAmountResponse = mortgage.getPaymentAmount(
         req.query.askingPrice,
         req.query.downPayment, 
         req.query.paymentSchedule,
@@ -48,7 +48,7 @@ router.get('/payment-amount', function(req, res) {
         })
     }
     res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaid: paymentAmountResponse.timesPaid, totalPaid: paymentAmountResponse.totalPaid})
-});
+})
 
 /* 
 GET /mortgage-amount
@@ -70,8 +70,8 @@ router.get('/mortgage-amount', function(req, res) {
             receivedParams: Object.keys(req.query)
         })
     }
-    mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod)
-    res.json({ message: mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod) });   
+    let mortgageAmountResponse = mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod)
+    res.json({ message: mortgageAmountResponse.mortgageAmount });   
 });
 
 /* 
@@ -84,14 +84,14 @@ message indicating the old and new interest rate in JSON format
 */
 router.patch('/interest-rate', function(req, res) {
     if(req.body.rate)
-        mortage.updateInterestRate(req.body.rate / 100)
+        mortgage.updateInterestRate(req.body.rate / 100)
     else 
         res.status(500).json({message: `Ensure to include 'rate' in the request body`})
     res.json({ interestRate: `Updated to ${req.body.rate}%` });   
 });
 
 router.get('/interest-rate', function(req, res) {
-    res.json({ interestRate: mortage.getInterestRate() });   
+    res.json({ interestRate: mortgage.getInterestRate() });   
 });
 
 // all of our routes will be prefixed with /api
