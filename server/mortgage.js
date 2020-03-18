@@ -14,9 +14,9 @@ Payment amount per scheduled payment in JSON format
 
 module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
     // Build the response structure
-    let response = {status: 200, returnReason: '', paymentAmount: ''}
+    let response = {status: 200, returnReason: '', paymentAmount: '', timesPaying: ''}
     let fAskingPrice, fDownPayment, fAmortizationPeriod
-    let diviser = 12 // Diviser will change depending on paymentSchedule | 12 for monthly, | 26 for bi-weekly | 52 for weekly
+    let multiplier = 12 // multiplier will change depending on paymentSchedule | 12 for monthly, | 26 for bi-weekly | 52 for weekly
 
     try {
         fAskingPrice = Number.parseFloat(askingPrice)
@@ -28,14 +28,16 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     }
     
     // Validate the payment schedule format.
-
     switch (paymentSchedule) {
         case 'weekly':
-            diviser = 52
+            multiplier = 52
+            break
         case 'bi-weekly':
-            diviser = 26
+            multiplier = 26
+            break
         case 'monthly':
-            diviser = 12
+            multiplier = 12
+            break
         default:
             response.status = 500
             response.returnReason = `Please choose one of weekly, bi-weekly or monthly for paymentSchedule. Got ${paymentSchedule}`
@@ -48,7 +50,7 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
         response.returnReason = `Amortization period must be between 5 and 25 (got ${fAmortizationPeriod})`
     }
 
-
+    // Validate downpayment amount
     if(fDownPayment >= fAskingPrice) {
         console.log(fDownPayment, fAskingPrice)
         response.status = 500
@@ -56,13 +58,14 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     }
 
     principal = fAskingPrice - downPayment
-    // TODO: This assumes always 12 right now. Need to calculate based on paymentSchedule and amortization
-    timesPaying = 180
+    // Determine times paying based on multiplier and years.
+    timesPaying = amortizationPeriod * multiplier
     monthlyInterest = interestRate / 12
 
     paymentAmount = calculateMonthlyPayment(principal, monthlyInterest, timesPaying)
 
     response.paymentAmount = paymentAmount
+    response.timesPaying = timesPaying
     return response
 }
 
