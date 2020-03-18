@@ -1,4 +1,4 @@
-var interestRate = 6 / 100
+var interestRate = 2.5 / 100
 
 /*
 GET /payment-amount
@@ -51,10 +51,9 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     }
 
     // Validate downpayment amount
-    if(fDownPayment >= fAskingPrice) {
-        console.log(fDownPayment, fAskingPrice)
+    if(!validateDownPayment(fDownPayment, fAskingPrice)) {
         response.status = 500
-        response.returnReason = `downPayment (${fDownPayment}) is greater or equal than askingPrice (${fAskingPrice})`
+        response.returnReason = `downPayment must be greater than the asking price, downPayment must be greater than 5% for loans of less than 500000, downPayment must be greater than 15% for loans of more than 500000`
     }
 
     principal = fAskingPrice - downPayment
@@ -66,7 +65,28 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
 
     response.paymentAmount = paymentAmount
     response.timesPaying = timesPaying
+    response.totalPaid = timesPaying * paymentAmount
     return response
+}
+
+const validateDownPayment = (downPayment, askingPrice) => {
+    console.log(downPayment, askingPrice, askingPrice * 0.05, askingPrice * 0.15)
+    // downPayment must be greater than the asking price
+    if(downPayment >= askingPrice) {
+        console.log(1)
+        return false
+    }
+    // downPayment must be greater than 5% for loans of less than 500000
+    if(askingPrice <= 500000 && downPayment < askingPrice * 0.05) {
+        console.log(2)
+        return false
+    }
+    // downPayment must be greater than 15% for loans of more than 500000
+    if(askingPrice > 500000 && downPayment < askingPrice * 0.15) {
+        console.log(3)
+        return false
+    } 
+    return true
 }
 
 const calculateMonthlyPayment = (principal, rate, timesPaid) => {

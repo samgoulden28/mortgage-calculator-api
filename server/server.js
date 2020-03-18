@@ -47,7 +47,7 @@ router.get('/payment-amount', function(req, res) {
             errorMessage: paymentAmountResponse.returnReason
         })
     }
-    res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaying: paymentAmountResponse.timesPaying});
+    res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaying: paymentAmountResponse.timesPaying, totalPaid: paymentAmountResponse.totalPaid});
 });
 
 /* 
