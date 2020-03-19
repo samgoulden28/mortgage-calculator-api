@@ -16,15 +16,15 @@ var interestRate = 2.5 / 100
 
 module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
     // Build the response structure
-    let response = {status: 200, returnReason: '', paymentAmount: '', timesPaid: ''}
+    let response = {status: 200, returnReason: ''}
     let fAskingPrice, fDownPayment, fAmortizationPeriod
     let timesPaidPerYear = 12 // timesPaidPerYear will change depending on paymentSchedule | 12 for monthly, | 26 for bi-weekly | 52 for weekly
 
-    try {
-        fAskingPrice = Number.parseFloat(askingPrice)
-        fDownPayment = Number.parseFloat(downPayment)
-        fAmortizationPeriod = Number.parseFloat(amortizationPeriod)
-    } catch (e) {
+    fAskingPrice = Number.parseFloat(askingPrice)
+    fDownPayment = Number.parseFloat(downPayment)
+    fAmortizationPeriod = Number.parseInt(amortizationPeriod)
+
+    if(isNaN(fAskingPrice) || isNaN(fDownPayment) || isNaN(fAmortizationPeriod)) {
         response.status = 500
         response.returnReason = `Float conversion error!`
         return response
@@ -42,12 +42,14 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     if(fAmortizationPeriod < 5 || fAmortizationPeriod > 25) {
         response.status = 500
         response.returnReason = `Amortization period must be between 5 and 25 (got ${amortizationPeriod})`
+        return response
     }
 
     // Validate downpayment amount
     if(!util.validateDownPayment(fDownPayment, fAskingPrice)) {
         response.status = 500
         response.returnReason = `downPayment must be greater than the asking price, downPayment must be greater than 5% for loans of less than 500000, downPayment must be greater than 15% for loans of more than 500000`
+        return response
     }
 
     // Add the mortgage insurance
@@ -69,8 +71,12 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
     response.mortgageInsurance = mortgageInsurance.toFixed(2)
     response.paymentAmount = paymentAmount
     response.timesPaid = timesPaid
-    response.totalPaid = timesPaid * paymentAmount
+    response.totalPaid = (timesPaid * paymentAmount).toFixed(2)
     return response
+}
+
+module.exports.sum = (num1, num2) => {
+    return num1 + num2
 }
 
 /* Get Mortgage Amount
@@ -85,19 +91,17 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
  */
 
 module.exports.getMortgageAmount = (paymentAmount, paymentSchedule, amortizationPeriod) => {
-    console.log("getMortgageAmount", paymentAmount, paymentSchedule, amortizationPeriod)
     // Build the response structure
     let response = {status: 200, returnReason: '', mortgageAmount: ''}
     
-    let fPaymentAmount, fPaymentSchedule, fAmortizationPeriod
+    let fPaymentAmount, fAmortizationPeriod
 
     timesPaidPerYear = util.calculateTimesPaidPerYear(paymentSchedule)
 
-    try {
-        fPaymentAmount = Number.parseFloat(paymentAmount)
-        fPaymentSchedule = Number.parseFloat(paymentSchedule)
-        fAmortizationPeriod = Number.parseFloat(amortizationPeriod)
-    } catch (e) {
+    fPaymentAmount= Number.parseFloat(paymentAmount)
+    fAmortizationPeriod = Number.parseInt(amortizationPeriod)
+
+    if(isNaN(fPaymentAmount) || isNaN(fAmortizationPeriod)) {
         response.status = 500
         response.returnReason = `Float conversion error!`
         return response
@@ -124,11 +128,9 @@ module.exports.getMortgageAmount = (paymentAmount, paymentSchedule, amortization
  */
 
 module.exports.updateInterestRate = (newRate) => {
-    console.log("updateInterestRate", interestRate)
-    interestRate = newRate
+    interestRate = Number.parseFloat(newRate).toFixed(4)
 }
 
 module.exports.getInterestRate = () => {
-    console.log("getInterestRate", interestRate)
     return interestRate
 }
