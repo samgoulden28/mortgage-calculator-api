@@ -4,7 +4,10 @@ A mortgage calculator API built in Express/Node.js
 
 ## How to run
 
-`npm start`
+```
+npm install
+npm start
+```
 
 ## Running the tests
 
