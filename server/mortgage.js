@@ -1,32 +1,18 @@
 var util = require('./util.js')
+// Interest rate starts at 2.5%
 var interestRate = 2.5 / 100
 
-/*
-GET /payment-amount
-Get the recurring payment amount of a mortgage
-Params: (query string)
-Asking Price
-Down Payment*
-Payment schedule***
-Amortization Period**
-Return:
-Payment amount per scheduled payment in JSON format
-*/
-
-/* 
-Down payment Insurance Cost
-5-9.99%
-3.15%
-
-10-14.99%
-2.4%
-
-15%-19.99%
-1.8%
-
-20%+
-N/A
-*/
+/* Get payment amount
+ *
+ * Return the monthly payment amount of a loan based on provided parameters
+ * 
+ * @param {string} askingPrice The total asking price of the house
+ * @param {string} downPayment Amount put forwards as the down payment
+ * @param {string} paymentSchedule One of 'weekly', 'bi-weekly', or 'monthly'
+ * @param {string} amortizationPeriod Total time of mortgage payment
+ *  
+ * @return {Object} response structure with information about payment amount or errors
+ */
 
 module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, amortizationPeriod) => {
     // Build the response structure
@@ -64,8 +50,11 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
         response.returnReason = `downPayment must be greater than the asking price, downPayment must be greater than 5% for loans of less than 500000, downPayment must be greater than 15% for loans of more than 500000`
     }
 
-    //TODO: Add insurance!
-    principal = fAskingPrice -fDownPayment
+    // Add the mortgage insurance
+    mortgageInsurance = util.calculateMortgageInsurance(fDownPayment, fAskingPrice)
+
+    // Calculate the total principal
+    principal = ((fAskingPrice - fDownPayment) + mortgageInsurance)
 
     // Determine times paying based on timesPaidPerYear and years.
     timesPaid = amortizationPeriod * timesPaidPerYear
@@ -75,28 +64,31 @@ module.exports.getPaymentAmount = (askingPrice, downPayment, paymentSchedule, am
 
     paymentAmount = util.calculateMonthlyPayment(principal, monthlyInterest, timesPaid)
 
+    response.interest = (interestRate * 100) + '%'
+    response.principal = principal.toFixed(2)
+    response.mortgageInsurance = mortgageInsurance.toFixed(2)
     response.paymentAmount = paymentAmount
     response.timesPaid = timesPaid
     response.totalPaid = timesPaid * paymentAmount
     return response
 }
 
-/* 
-GET /mortgage-amount
-Get the maximum mortgage amount (principal)
-Params: (query string)
-payment amount
-Payment schedule***
-Amortization Period**
-Return:
-Maximum Mortgage that can be taken out in JSON form
-*/
+/* Get Mortgage Amount
+ *
+ * Return the maximum possible mortgage amount given a payment amount and schedule
+ * 
+ * @param {string} paymentAmount Monthly payment amount for loan
+ * @param {string} paymentSchedule One of 'weekly', 'bi-weekly', or 'monthly'
+ * @param {string} amortizationPeriod Total time of mortgage payment
+ *  
+ * @return {Object} response structure with information about payment amount or errors
+ */
 
 module.exports.getMortgageAmount = (paymentAmount, paymentSchedule, amortizationPeriod) => {
+    console.log("getMortgageAmount", paymentAmount, paymentSchedule, amortizationPeriod)
     // Build the response structure
     let response = {status: 200, returnReason: '', mortgageAmount: ''}
-
-    console.log("getMortgageAmount", paymentAmount, paymentSchedule, amortizationPeriod)
+    
     let fPaymentAmount, fPaymentSchedule, fAmortizationPeriod
 
     timesPaidPerYear = util.calculateTimesPaidPerYear(paymentSchedule)
@@ -117,14 +109,23 @@ module.exports.getMortgageAmount = (paymentAmount, paymentSchedule, amortization
     // Determine interest per payment (interest Rate / timesPaidPerYear)
     monthlyInterest = interestRate / timesPaidPerYear
 
+    response.interest = (interestRate * 100) + '%'
     response.mortgageAmount = util.calculateMaxMortgage(fPaymentAmount, monthlyInterest, timesPaid)
 
     return response
 }
 
+/* Update Interest Rate
+ *
+ * Update the yearly interest rate to a new amount
+ * 
+ * @param {string} newRate new yearly insurance rate for mortgages
+ * @return {Object} response structure with information about payment amount or errors
+ */
+
 module.exports.updateInterestRate = (newRate) => {
-    interestRate = newRate
     console.log("updateInterestRate", interestRate)
+    interestRate = newRate
 }
 
 module.exports.getInterestRate = () => {

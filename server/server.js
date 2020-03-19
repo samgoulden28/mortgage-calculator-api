@@ -19,7 +19,17 @@ router.get('/', function(req, res) {
     res.json({ message: 'hooray! welcome to our api!' });   
 });
 
-// Get payment amount
+/* GET /payment-amount
+ * Get the recurring payment amount of a mortgage
+ * Params: (query string)
+ * Asking Price
+ * Down Payment*
+ * Payment schedule***
+ * Amortization Period**
+ * Return:
+ * Payment amount per scheduled payment in JSON format
+ */
+
 router.get('/payment-amount', function(req, res) {
     // Validate query params
     if (!req.query.askingPrice || 
@@ -47,19 +57,20 @@ router.get('/payment-amount', function(req, res) {
             errorMessage: paymentAmountResponse.returnReason
         })
     }
-    res.json({ paymentAmount: paymentAmountResponse.paymentAmount, timesPaid: paymentAmountResponse.timesPaid, totalPaid: paymentAmountResponse.totalPaid})
+    console.log(paymentAmountResponse)
+    res.json({paymentAmount: paymentAmountResponse.paymentAmount})
 })
 
 /* 
-GET /mortgage-amount
-Get the maximum mortgage amount (principal)
-Params: (query string)
-payment amount
-Payment schedule***
-Amortization Period**
-Return:
-Maximum Mortgage that can be taken out in JSON form
-*/
+ * GET /mortgage-amount
+ * Get the maximum mortgage amount (principal)
+ * Params: (query string)
+ * payment amount
+ * Payment schedule***
+ * Amortization Period**
+ * Return:
+ * Maximum Mortgage that can be taken out in JSON form
+ */
 
 router.get('/mortgage-amount', function(req, res) {
     if (!req.query.paymentAmount || 
@@ -71,31 +82,39 @@ router.get('/mortgage-amount', function(req, res) {
         })
     }
     let mortgageAmountResponse = mortgage.getMortgageAmount(req.query.paymentAmount, req.query.paymentSchedule, req.query.amortizationPeriod)
-    res.json({ message: mortgageAmountResponse.mortgageAmount });   
+    console.log(mortgageAmountResponse)
+    res.json({ maximumMortage: mortgageAmountResponse.mortgageAmount });   
 });
 
 /* 
-PATCH /interest-rate
-Change the interest rate used by the application
-Params: (in request body as JSON)
-Interest Rate
-Return:
-message indicating the old and new interest rate in JSON format
+ * PATCH /interest-rate
+ * Change the interest rate used by the application
+ * Params: (in request body as JSON)
+ * Interest Rate
+ * Return:
+ * message indicating the old and new interest rate in JSON format
 */
 router.patch('/interest-rate', function(req, res) {
+    let oldRate = mortgage.getInterestRate() * 100
     if(req.body.rate)
         mortgage.updateInterestRate(req.body.rate / 100)
     else 
         res.status(500).json({message: `Ensure to include 'rate' in the request body`})
-    res.json({ interestRate: `Updated to ${req.body.rate}%` });   
+    res.json({ interestRate: `Updated interestRate from ${oldRate}% to ${req.body.rate}%` });   
 });
+
+/* 
+ * GET /interest-rate
+ * Get the interest rate used by the application
+ * Return:
+ * message indicating the current interest rate in JSON format
+*/
 
 router.get('/interest-rate', function(req, res) {
     res.json({ interestRate: mortgage.getInterestRate() });   
 });
 
-// all of our routes will be prefixed with /api
-app.use('/api', router);
+app.use('/', router);
 
 // Turn on that server!
 app.listen(port, () => {
