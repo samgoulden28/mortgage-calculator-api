@@ -36,6 +36,8 @@ module.exports.calculateTimesPaidPerYear = (paymentSchedule) => {
  * @return {float} result The calculated mortgage insurance
  */
 module.exports.calculateMortgageInsurance = (downPayment, askingPrice) => {
+    //Insurance is not valid for mortgages over 1,000,000
+    if(askingPrice > 1000000) return 0
     let downPaymentPercentage = downPayment / askingPrice * 100
 
     let insuranceCostPercentage = 0
